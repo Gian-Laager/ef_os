@@ -1,0 +1,10 @@
+[package]
+name = "my_os"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bootloader = "0.9.8"
+
+[rust-analyzer.checkOnSave]
+allTarget = false
