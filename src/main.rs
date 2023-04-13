@@ -13,7 +13,6 @@ use core::panic::PanicInfo;
 
 mod memory;
 mod vga;
-// mod io;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -35,9 +34,7 @@ fn print_panic_banner(info: &PanicInfo) -> ! {
     for (i, &byte) in message.iter().enumerate() {
         unsafe {
             *vga_buffer.offset(i as isize * 2) = byte;
-            let fg = (i & 0xf) << 4;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xF + fg as u8;
-            // *vga_buffer.offset(i as isize * 2 + 1) = 0x4F;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0x4F;
         }
     }
 
