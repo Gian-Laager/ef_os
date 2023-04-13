@@ -1,45 +1,62 @@
 #![no_main]
 #![no_std]
-
 #![feature(panic_info_message)]
- 
+#![feature(const_mut_refs)]
+#![feature(const_maybe_uninit_zeroed)]
+// #![feature(restricted_std)]
+
+#[macro_use]
 extern crate alloc;
 
+#[macro_use]
+extern crate lazy_static;
+
 use core::panic::PanicInfo;
-use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 
 mod memory;
+mod vga_buffer;
+// mod io;
+
+use vga_buffer::vgaout;
+use core::fmt::Write;
 
 static HELLO: &[u8] = b"Hello World!";
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     memory::init_heap();
-    
-    let mut v = vec![1,2,3];
-    v.push(31);
+    let test = vec![1,2,3];
+    println!("test: {:#?}", test);
 
-    loop {
-        let vga_buffer = 0xb8000 as *mut u8;
 
-        for (i, &byte) in HELLO.iter().enumerate() {
-            unsafe {
-                *vga_buffer.offset(i as isize * 2) = byte;
-                *vga_buffer.offset(i as isize * 2 + 1) = 0x0F;
-            }
-        }
-    }
+    // std::panic::set_hook(Box::new(panic_hlt));
+    // std::panic::set_hook(Box::new(print_panic_banner));
+    //
+    // let vga_buffer = 0xb8000 as *mut u8;
+    //
+    // for (i, &byte) in HELLO.iter().enumerate() {
+    //     unsafe {
+    //         *vga_buffer.offset(i as isize * 2) = byte;
+    //         *vga_buffer.offset(i as isize * 2 + 1) = 0x0F;
+    //     }
+    // }
+
+    // panic!("test");
+
+    loop {}
 }
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
+fn print_panic_banner(info: &PanicInfo) -> ! {
     let vga_buffer = 0xb8000 as *mut u8;
-    let message: &[u8] = b"################################################################################                                KERNERL  PANICED                                ################################################################################";
+    let message: &[u8] = b"################################################################################                                 KERNEL PANICED                                 ################################################################################";
     for (i, &byte) in message.iter().enumerate() {
         unsafe {
             *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0x4F;
+            let fg = (i & 0xf) << 4;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0xF + fg as u8;
+            // *vga_buffer.offset(i as isize * 2 + 1) = 0x4F;
         }
     }
 

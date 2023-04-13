@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 bootloader = "0.9.8"
-x86_64 = "0.14.2"
 linked_list_allocator = "0.10"
-volatile = "0.2.6"
+lazy_static = {version="1.4", features = ["spin_no_std"]}
+spin = "0.5"
