@@ -46,6 +46,12 @@ impl VgaOut {
 impl core::fmt::Write for VgaOut {
     fn write_str(&mut self, data: &str) -> Result<(), core::fmt::Error> {
         for c in data.as_bytes() {
+            if *c == b'\n' {
+                let num_spaces = self.screen_size.0 - (self.writing_idx % self.screen_size.0);
+                self.write_str(core::str::from_utf8(&vec![b' '; num_spaces]).unwrap())?;
+                continue;
+            }
+
             if self.writing_idx < self.vga_buff.len() {
                 self.write_char_to_writing_idx(*c)?;
             } else {
@@ -53,7 +59,7 @@ impl core::fmt::Write for VgaOut {
                     Vec::from(&self.vga_buff[self.screen_size.0..(self.vga_buff.len())]);
                 self.vga_buff[0..(self.screen_size.0 * (self.screen_size.1 - 1))]
                     .copy_from_slice(preserved.as_slice());
-                self.writing_idx -= self.screen_size.1;
+                self.writing_idx -= self.screen_size.0;
                 self.write_char_to_writing_idx(*c)?;
             }
         }
@@ -61,7 +67,7 @@ impl core::fmt::Write for VgaOut {
     }
 }
 
-const VGA_DEFAULT_SCREEN_SIZE: (usize, usize) = (24, 80);
+const VGA_DEFAULT_SCREEN_SIZE: (usize, usize) = (80, 24);
 type VgaOutLock = spin::Mutex<VgaOut>;
 lazy_static!{
     static ref VGA_OUT: VgaOutLock = spin::Mutex::new(VgaOut::new(VGA_DEFAULT_SCREEN_SIZE, 0xb8000 as *mut u16));
@@ -88,7 +94,7 @@ impl<'a> core::fmt::Write for VgaOutRef<'a> {
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {{
-        $crate::vga_buffer::_print($crate::format_args!($($arg)*));
+        $crate::vga::_print(core::format_args!($($arg)*));
     }};
 }
 
@@ -98,7 +104,7 @@ macro_rules! println {
         $crate::vga_buffer::print!("\n")
     };
     ($($arg:tt)*) => {{
-        $crate::vga_buffer::_print(core::format_args!($($arg)*));
+        $crate::vga::_print(core::format_args_nl!($($arg)*));
     }};
 }
 

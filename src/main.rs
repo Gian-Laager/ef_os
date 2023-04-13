@@ -1,9 +1,7 @@
 #![no_main]
 #![no_std]
 #![feature(panic_info_message)]
-#![feature(const_mut_refs)]
-#![feature(const_maybe_uninit_zeroed)]
-// #![feature(restricted_std)]
+#![feature(format_args_nl)]
 
 #[macro_use]
 extern crate alloc;
@@ -14,36 +12,19 @@ extern crate lazy_static;
 use core::panic::PanicInfo;
 
 mod memory;
-mod vga_buffer;
+mod vga;
 // mod io;
-
-use vga_buffer::vgaout;
-use core::fmt::Write;
-
-static HELLO: &[u8] = b"Hello World!";
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     memory::init_heap();
-    let test = vec![1,2,3];
-    println!("test: {:#?}", test);
 
-
-    // std::panic::set_hook(Box::new(panic_hlt));
-    // std::panic::set_hook(Box::new(print_panic_banner));
-    //
-    // let vga_buffer = 0xb8000 as *mut u8;
-    //
-    // for (i, &byte) in HELLO.iter().enumerate() {
-    //     unsafe {
-    //         *vga_buffer.offset(i as isize * 2) = byte;
-    //         *vga_buffer.offset(i as isize * 2 + 1) = 0x0F;
-    //     }
-    // }
-
-    // panic!("test");
-
-    loop {}
+    for i in 0..40 {
+        println!("println test: hello {}", i);
+    }
+    
+    loop {
+    }
 }
 
 /// This function is called on panic.
