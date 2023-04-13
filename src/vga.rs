@@ -1,6 +1,6 @@
-use alloc::{vec::Vec, boxed::Box};
-use spin;
+use alloc::{boxed::Box, vec::Vec};
 use core::fmt::Write;
+use spin;
 
 pub struct VgaOut {
     writing_idx: usize,
@@ -11,9 +11,8 @@ pub struct VgaOut {
 
 impl VgaOut {
     pub fn new(screen_size: (usize, usize), buffer: *mut u16) -> Self {
-        let vga_buff = unsafe {
-            core::slice::from_raw_parts_mut(buffer, screen_size.0 * screen_size.1)
-        };
+        let vga_buff =
+            unsafe { core::slice::from_raw_parts_mut(buffer, screen_size.0 * screen_size.1) };
 
         if screen_size.0 == 0 {
             panic!("[VgaOut::init] screen_size width may not be 0.");
@@ -47,8 +46,10 @@ impl core::fmt::Write for VgaOut {
     fn write_str(&mut self, data: &str) -> Result<(), core::fmt::Error> {
         for c in data.as_bytes() {
             if *c == b'\n' {
-                let num_spaces = self.screen_size.0 - (self.writing_idx % self.screen_size.0);
-                self.write_str(core::str::from_utf8(&vec![b' '; num_spaces]).unwrap())?;
+                if self.writing_idx % self.screen_size.0 != 0 {
+                    let num_spaces = self.screen_size.0 - (self.writing_idx % self.screen_size.0);
+                    self.write_str(core::str::from_utf8(&vec![b' '; num_spaces]).unwrap())?;
+                }
                 continue;
             }
 
@@ -67,22 +68,20 @@ impl core::fmt::Write for VgaOut {
     }
 }
 
-const VGA_DEFAULT_SCREEN_SIZE: (usize, usize) = (80, 24);
+pub const VGA_DEFAULT_SCREEN_SIZE: (usize, usize) = (80, 24);
 type VgaOutLock = spin::Mutex<VgaOut>;
-lazy_static!{
-    static ref VGA_OUT: VgaOutLock = spin::Mutex::new(VgaOut::new(VGA_DEFAULT_SCREEN_SIZE, 0xb8000 as *mut u16));
+lazy_static! {
+    static ref VGA_OUT: VgaOutLock =
+        spin::Mutex::new(VgaOut::new(VGA_DEFAULT_SCREEN_SIZE, 0xb8000 as *mut u16));
 }
 
-
 pub struct VgaOutRef<'a> {
-    repr: spin::MutexGuard<'a, VgaOut>
+    repr: spin::MutexGuard<'a, VgaOut>,
 }
 
 impl<'a> From<spin::MutexGuard<'a, VgaOut>> for VgaOutRef<'a> {
     fn from(guard: spin::MutexGuard<'a, VgaOut>) -> Self {
-        Self {
-            repr: guard
-        }
+        Self { repr: guard }
     }
 }
 
@@ -101,13 +100,12 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     () => {
-        $crate::vga_buffer::print!("\n")
+        print!("\n")
     };
     ($($arg:tt)*) => {{
         $crate::vga::_print(core::format_args_nl!($($arg)*));
     }};
 }
-
 
 pub fn vgaout() -> VgaOutRef<'static> {
     (*VGA_OUT).lock().into()
