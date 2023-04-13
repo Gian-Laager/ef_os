@@ -1,26 +1,56 @@
-#![no_std]
 #![no_main]
+#![no_std]
+#![feature(panic_info_message)]
+#![feature(format_args_nl)]
+
+#[macro_use]
+extern crate alloc;
+
+#[macro_use]
+extern crate lazy_static;
 
 use core::panic::PanicInfo;
 
-static HELLO: &[u8] = b"Hello World!";
+mod memory;
+mod vga;
+// mod io;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    loop {
-        let vga_buffer = 0xb8000 as *mut u8;
+    memory::init_heap();
 
-        for (i, &byte) in HELLO.iter().enumerate() {
-            unsafe {
-                *vga_buffer.offset(i as isize * 2) = byte;
-                *vga_buffer.offset(i as isize * 2 + 1) = 0x2F;
-            }
-        }
+    for i in 0..40 {
+        println!("println test: hello {}", i);
+    }
+    
+    loop {
     }
 }
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn print_panic_banner(info: &PanicInfo) -> ! {
+    let vga_buffer = 0xb8000 as *mut u8;
+    let message: &[u8] = b"################################################################################                                 KERNEL PANICED                                 ################################################################################";
+    for (i, &byte) in message.iter().enumerate() {
+        unsafe {
+            *vga_buffer.offset(i as isize * 2) = byte;
+            let fg = (i & 0xf) << 4;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0xF + fg as u8;
+            // *vga_buffer.offset(i as isize * 2 + 1) = 0x4F;
+        }
+    }
+
+    if let Some(msg) = info.message() {
+        if let Some(msg_str) = msg.as_str() {
+            for (i, &byte) in msg_str.as_bytes().iter().enumerate() {
+                unsafe {
+                    *vga_buffer.offset((i + message.len()) as isize * 2) = byte;
+                    *vga_buffer.offset((i + message.len()) as isize * 2 + 1) = 0x0F;
+                }
+            }
+        }
+    }
+
     loop {}
 }
