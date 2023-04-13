@@ -2,7 +2,10 @@ nmap <leader><leader>b :!cargo bootimage<CR>
 nmap <leader><leader>B :!cargo --release bootimage<CR>
 
 nmap <leader><leader>r :!cargo run<CR>
-nmap <leader><leader>R :!cargo --release run<CR>
+nmap <leader><leader>R :!cargo run --release<CR>
+
+nmap <leader><leader>t :!cargo test<CR>
+nmap <leader><leader>T :!cargo test --release<CR>
 
 lua << EOF
 local nvim_lsp = require'lspconfig'

@@ -36,7 +36,6 @@ pub extern "C" fn _start() -> ! {
 
 fn main() {
     println!("main");
-    panic!("test");
 }
 
 static mut PANIC_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
@@ -53,7 +52,7 @@ fn print_panic_banner(info: &PanicInfo) -> ! {
     }
 
     if panic_count > 0 {
-        // panic code paniced before, fall back to manually overriding vga buffer 
+        // panic code paniced before, fall back to manually overriding vga buffer
         let vga_buffer = 0xb8000 as *mut u8;
         let message: &[u8] = b"################################################################################                                 KERNEL PANICED                                 ################################################################################";
         for (i, &byte) in message.iter().enumerate() {
@@ -64,7 +63,9 @@ fn print_panic_banner(info: &PanicInfo) -> ! {
         }
 
         // clear rest of screen
-        for i in vga::VGA_DEFAULT_SCREEN_SIZE.0 * 3..vga::VGA_DEFAULT_SCREEN_SIZE.0*vga::VGA_DEFAULT_SCREEN_SIZE.1 {
+        for i in vga::VGA_DEFAULT_SCREEN_SIZE.0 * 3
+            ..vga::VGA_DEFAULT_SCREEN_SIZE.0 * vga::VGA_DEFAULT_SCREEN_SIZE.1
+        {
             unsafe {
                 *vga_buffer.offset(i as isize * 2) = 0;
                 *vga_buffer.offset(i as isize * 2 + 1) = 0;
@@ -98,7 +99,7 @@ fn print_panic_banner(info: &PanicInfo) -> ! {
 fn test_panic_handler(info: &PanicInfo) -> ! {
     let panic_count = unsafe { PANIC_COUNT.load(core::sync::atomic::Ordering::Acquire) };
     unsafe { PANIC_COUNT.store(panic_count + 1, core::sync::atomic::Ordering::Release) };
-    
+
     // fall back to default handler
     if panic_count > 0 {
         unsafe { PANIC_COUNT.store(1, core::sync::atomic::Ordering::Release) };
