@@ -3,6 +3,8 @@
 #![feature(panic_info_message)]
 #![feature(format_args_nl)]
 #![feature(custom_test_frameworks)]
+#![feature(asm_const)]
+#![feature(abi_x86_interrupt)]
 #![test_runner(crate::test::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
@@ -15,16 +17,24 @@ extern crate lazy_static;
 #[macro_use]
 extern crate macros;
 
+
+#[macro_use]
+extern crate x86_64;
+
 use core::panic::PanicInfo;
+use core::arch::asm;
+use x86_64::software_interrupt;
 
 mod memory;
 #[cfg(test)]
 mod test;
 mod vga;
+mod interrupts;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     memory::init_heap();
+    interrupts::idt_init();
 
     #[cfg(test)]
     test_main();
@@ -36,7 +46,21 @@ pub extern "C" fn _start() -> ! {
 
 fn main() {
     println!("main");
+    let com_ports = 0x3f8 as *mut usize;
+    unsafe {
+        match com_ports.as_ref() {
+            Some(value) => println!("value: {}", value.clone()),
+            None => println!("pointer error")
+        }
+    }
+    // unsafe {
+    //     let com_ports = 0x3f8 as *mut usize;
+    //        
+    //     *com_ports.offset(1) = 1;
+    //     *com_ports.offset(2) = 254;
+    // }
 }
+
 
 static mut PANIC_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
