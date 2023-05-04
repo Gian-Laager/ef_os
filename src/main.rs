@@ -14,6 +14,8 @@ extern crate alloc;
 #[macro_use]
 extern crate lazy_static;
 
+#[allow(unused_imports)]
+#[macro_use]
 extern crate macros;
 
 #[macro_use]
@@ -54,9 +56,9 @@ fn print_buzz(_frame: idt::InterruptStackFrame, _idx: u8, _err: Option<u64>) {
 }
 
 fn main() {
-    // heap allocation
+    // heap allocation just for demonstration
     let numbers = (0..100i32).into_iter().collect::<Vec<i32>>();
-    // demonstation of interrupts
+    // demonstration of interrupts
     unsafe {
         x86_64::set_general_handler!(&mut interrupts::IDT, print_fizz, 254);
         x86_64::set_general_handler!(&mut interrupts::IDT, print_buzz, 255);

@@ -16,3 +16,26 @@ extern "x86-interrupt" fn page_fault(
 ) {
     panic!("cpu exception page_fault: {:#?}", err);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::*;
+    use core::arch::asm;
+
+    static mut TEST_VAR: bool = false;
+    fn interrupt(_frame: idt::InterruptStackFrame, _idx: u8, _err: Option<u64>) {
+        unsafe {
+            TEST_VAR = true;
+        }
+    }
+
+    #[os_test]
+    fn custom_interrupt() {
+        unsafe {
+            set_general_handler!(&mut IDT, interrupt, 255);
+            software_interrupt!(255);
+            assert!(TEST_VAR);
+        }
+    }
+}
