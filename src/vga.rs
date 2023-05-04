@@ -1,3 +1,6 @@
+use crate::print;
+use crate::println;
+use alloc::string::*;
 use alloc::{boxed::Box, vec::Vec};
 use core::fmt::Write;
 use spin;
@@ -40,28 +43,87 @@ impl VgaOut {
         self.writing_idx += 1;
         Ok(())
     }
+
+    pub fn get_current_color(&self) -> u16 {
+        self.current_color
+    }
 }
 
 impl core::fmt::Write for VgaOut {
     fn write_str(&mut self, data: &str) -> Result<(), core::fmt::Error> {
+        let mut is_color = false;
+        let mut partial_color = 0u16;
         for c in data.as_bytes() {
-            if *c == b'\n' {
-                if self.writing_idx % self.screen_size.0 != 0 {
-                    let num_spaces = self.screen_size.0 - (self.writing_idx % self.screen_size.0);
-                    self.write_str(core::str::from_utf8(&vec![b' '; num_spaces]).unwrap())?;
-                }
+            if *c == 0x1b {
+                // ANSI color escape sequence \033 in string
+                is_color = true;
                 continue;
             }
 
-            if self.writing_idx < self.vga_buff.len() {
-                self.write_char_to_writing_idx(*c)?;
+            if is_color {
+                if *c == b'[' {
+                    partial_color = 0;
+                    continue;
+                } else if *c == b'm' || *c == b';' {
+                    if partial_color >= 30 && partial_color <= 37 {
+                        const mask: u16 = 0b00001111u16 << 8;
+                        let vga_color = (partial_color as u16 - 30) << 8;
+                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                    }
+
+                    if partial_color >= 90 && partial_color <= 97 {
+                        const mask: u16 = 0b00001111u16 << 8;
+                        let vga_color = (partial_color as u16 - 82) << 8;
+                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                    }
+
+                    if partial_color >= 40 && partial_color <= 47 {
+                        const mask: u16 = 0b11110000u16 << 8;
+                        let vga_color = (partial_color as u16 - 40) << 12;
+                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                    }
+
+                    if partial_color >= 100 && partial_color <= 107 {
+                        const mask: u16 = 0b11110000u16 << 8;
+                        let vga_color = (partial_color as u16 - 92) << 12;
+                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                    }
+
+                    if partial_color == 0 {
+                        self.current_color = 0x0f00;
+                    }
+
+                    partial_color = 0;
+                }
+
+                if *c >= b'0' && *c <= b'9' {
+                    partial_color *= 10;
+                    partial_color += *c as u16 - b'0' as u16;
+                }
+
+                if *c == b'm' {
+                    is_color = false;
+                }
             } else {
-                let preserved =
-                    Vec::from(&self.vga_buff[self.screen_size.0..(self.vga_buff.len())]);
-                self.vga_buff[0..(self.screen_size.0 * (self.screen_size.1 - 1))]
-                    .copy_from_slice(preserved.as_slice());
-                self.writing_idx -= self.screen_size.0;
-                self.write_char_to_writing_idx(*c)?;
+                if *c == b'\n' {
+                    if self.writing_idx % self.screen_size.0 != 0 {
+                        let num_spaces =
+                            self.screen_size.0 - (self.writing_idx % self.screen_size.0);
+                        self.write_str(core::str::from_utf8(&vec![b' '; num_spaces]).unwrap())?;
+                    }
+                    continue;
+                }
+
+                if self.writing_idx < self.vga_buff.len() {
+                    self.write_char_to_writing_idx(*c)?;
+                } else {
+                    let preserved =
+                        Vec::from(&self.vga_buff[self.screen_size.0..(self.vga_buff.len())]);
+                    self.vga_buff[0..(self.screen_size.0 * (self.screen_size.1 - 1))]
+                        .copy_from_slice(preserved.as_slice());
+                    self.writing_idx -= self.screen_size.0;
+                    self.write_char_to_writing_idx(*c)?;
+                }
             }
         }
         return Ok(());
@@ -76,7 +138,7 @@ lazy_static! {
 }
 
 pub struct VgaOutRef<'a> {
-    repr: spin::MutexGuard<'a, VgaOut>,
+    pub repr: spin::MutexGuard<'a, VgaOut>,
 }
 
 impl<'a> From<spin::MutexGuard<'a, VgaOut>> for VgaOutRef<'a> {
