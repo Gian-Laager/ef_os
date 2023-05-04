@@ -1,12 +1,17 @@
-# Blog OS (A Minimal Rust Kernel)
+# EF OS
 
-[![Build Status](https://github.com/phil-opp/blog_os/workflows/Code/badge.svg?branch=post-02)](https://github.com/phil-opp/blog_os/actions?query=workflow%3A%22Code%22+branch%3Apost-02)
+This is a school project for learning how to write an operating system in Rust. It is in no way feature complete or stable.
 
-This repository contains the source code for the [A Minimal Rust Kernel][post] post of the [Writing an OS in Rust](https://os.phil-opp.com) series.
+## Features
+- Heap allocations (support for String, Vec, Box, etc.)
+- Printing with the normal `println!` function to VGA text mode
+- Printing with ANSI colors using `"\x1b[..;..m"` where .. are the normal ANSI 8bit colors.
+- Test suite with the `os_test` macro (can be run with `cargo test`)
+- Panicking with back trace if available
+- Interrupts (technically supported but not used with `x86_64::software_interrupt!` and `x86_64::set_general_handler!`)
 
-[post]: https://os.phil-opp.com/minimal-rust-kernel/
+The kernel demonstrates most of these features in an overcomplicated fizz buzz implementation.
 
-**Check out the [master branch](https://github.com/phil-opp/blog_os) for more information.**
 
 ## Building
 
@@ -51,23 +56,9 @@ cargo run
 You can also write the image to an USB stick for booting it on a real machine. On Linux, the command for this is:
 
 ```
-dd if=target/x86_64-blog_os/debug/bootimage-blog_os.bin of=/dev/sdX && sync
+dd if=target/x86_64-ef_os/debug/bootimage-ef_os.bin of=/dev/sdX && sync
 ```
 
 Where `sdX` is the device name of your USB stick. **Be careful** to choose the correct device name, because everything on that device is overwritten.
 
-## License
-
-Licensed under either of
-
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-  http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
-
-Note that this only applies to this git branch, other branches might be licensed differently.
-
-### Contribution
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+This should work in theory but until now it has never worked.

@@ -20,10 +20,10 @@ extern crate macros;
 #[macro_use]
 extern crate x86_64;
 
-use alloc::string::*;
+use alloc::vec::*;
 use core::arch::asm;
 use core::panic::PanicInfo;
-use x86_64::software_interrupt;
+use x86_64::structures::idt;
 
 mod interrupts;
 mod memory;
@@ -44,15 +44,38 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
-fn main() {
-    println!("main");
+fn print_fizz(frame: idt::InterruptStackFrame, idx: u8, err: Option<u64>) {
+    // will print red
+    print!("\x1b[44mfizz");
+}
 
-    // println!("\x1b[33mtest");
-    let color = vga::vgaout().repr.get_current_color();
-    println!("\x1b[32;41mcolor: {:#x}", color);
-    let color = vga::vgaout().repr.get_current_color();
-    println!("\x1b[0mcolor: {:#x}", color);
-    panic!("test");
+fn print_buzz(frame: idt::InterruptStackFrame, idx: u8, err: Option<u64>) {
+    // will print purple
+    print!("\x1b[45mbuzz");
+}
+
+fn main() {
+    // heap allocation
+    let numbers = (0..100i32).into_iter().collect::<Vec<i32>>();
+    // demonstation of interrupts
+    unsafe {
+        x86_64::set_general_handler!(&mut interrupts::IDT, print_fizz, 254);
+        x86_64::set_general_handler!(&mut interrupts::IDT, print_buzz, 255);
+    }
+    for i in numbers.iter() {
+        if i % 3 == 0 {
+            unsafe {
+                software_interrupt!(254);
+            }
+        } else if i % 5 == 0 {
+            unsafe {
+                software_interrupt!(255);
+            }
+        } else {
+            print!("{}", i);
+        }
+        println!("\x1b[0m");
+    }
 }
 
 static mut PANIC_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
@@ -124,7 +147,7 @@ fn test_panic_handler(info: &PanicInfo) -> ! {
     }
 
     println!();
-    println!("################################# TEST  FAILED #################################");
+    println!("\x1b[39;44m################################# TEST  FAILED #################################\x1b[0m");
     println!("{}", info);
     loop {}
 }
