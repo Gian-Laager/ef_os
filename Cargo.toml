@@ -1,10 +1,13 @@
 [package]
-name = "my_os"
+name = "ef_os"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 bootloader = "0.9.8"
+linked_list_allocator = "0.10"
+lazy_static = {version="1.4", features = ["spin_no_std"]}
+spin = "0.5"
+x86_64 = "0.14"
+macros = {path = "macros"}
 
-[rust-analyzer.checkOnSave]
-allTarget = false
