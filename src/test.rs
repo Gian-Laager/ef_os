@@ -12,7 +12,7 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
     for (i, test) in tests.iter().enumerate() {
         test();
     }
-    println!("all test cases passed");
+    println!("\n\x1b[42mall test cases passed\x1b[0m");
 }
 
 #[cfg(test)]
