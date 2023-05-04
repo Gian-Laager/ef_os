@@ -17,19 +17,19 @@ extern crate lazy_static;
 #[macro_use]
 extern crate macros;
 
-
 #[macro_use]
 extern crate x86_64;
 
-use core::panic::PanicInfo;
+use alloc::string::*;
 use core::arch::asm;
+use core::panic::PanicInfo;
 use x86_64::software_interrupt;
 
+mod interrupts;
 mod memory;
 #[cfg(test)]
 mod test;
 mod vga;
-mod interrupts;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -46,21 +46,14 @@ pub extern "C" fn _start() -> ! {
 
 fn main() {
     println!("main");
-    let com_ports = 0x3f8 as *mut usize;
-    unsafe {
-        match com_ports.as_ref() {
-            Some(value) => println!("value: {}", value.clone()),
-            None => println!("pointer error")
-        }
-    }
-    // unsafe {
-    //     let com_ports = 0x3f8 as *mut usize;
-    //        
-    //     *com_ports.offset(1) = 1;
-    //     *com_ports.offset(2) = 254;
-    // }
-}
 
+    // println!("\x1b[33mtest");
+    let color = vga::vgaout().repr.get_current_color();
+    println!("\x1b[32;41mcolor: {:#x}", color);
+    let color = vga::vgaout().repr.get_current_color();
+    println!("\x1b[0mcolor: {:#x}", color);
+    panic!("test");
+}
 
 static mut PANIC_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
@@ -111,7 +104,7 @@ fn print_panic_banner(info: &PanicInfo) -> ! {
         }
     } else {
         println!();
-        println!("################################################################################\n                                 KERNEL PANICED                                 \n################################################################################");
+        println!("\x1b[39;44m################################################################################\n                                 KERNEL PANICED                                 \n################################################################################\x1b[0m");
         println!("{}", info);
     }
 
