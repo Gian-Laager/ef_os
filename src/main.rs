@@ -14,7 +14,6 @@ extern crate alloc;
 #[macro_use]
 extern crate lazy_static;
 
-#[macro_use]
 extern crate macros;
 
 #[macro_use]
@@ -44,12 +43,12 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
-fn print_fizz(frame: idt::InterruptStackFrame, idx: u8, err: Option<u64>) {
+fn print_fizz(_frame: idt::InterruptStackFrame, _idx: u8, _err: Option<u64>) {
     // will print red
     print!("\x1b[44mfizz");
 }
 
-fn print_buzz(frame: idt::InterruptStackFrame, idx: u8, err: Option<u64>) {
+fn print_buzz(_frame: idt::InterruptStackFrame, _idx: u8, _err: Option<u64>) {
     // will print purple
     print!("\x1b[45mbuzz");
 }
@@ -65,19 +64,23 @@ fn main() {
     for i in numbers.iter() {
         if i % 3 == 0 {
             unsafe {
+                // causes an interrupt and jumps to print_fizz
                 software_interrupt!(254);
             }
         } else if i % 5 == 0 {
             unsafe {
+                // causes an interrupt and jumps to print_buzz
                 software_interrupt!(255);
             }
         } else {
             print!("{}", i);
         }
+        // reset color
         println!("\x1b[0m");
     }
 }
 
+// is in theory thread safe
 static mut PANIC_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// This function is called on panic.

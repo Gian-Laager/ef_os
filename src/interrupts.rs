@@ -1,7 +1,4 @@
-use crate::println;
-use x86_64::set_general_handler;
 use x86_64::structures::idt;
-use x86_64::structures::idt::InterruptStackFrame;
 
 pub static mut IDT: idt::InterruptDescriptorTable = idt::InterruptDescriptorTable::new();
 
@@ -14,7 +11,7 @@ pub fn idt_init() {
 }
 
 extern "x86-interrupt" fn page_fault(
-    frame: idt::InterruptStackFrame,
+    _frame: idt::InterruptStackFrame,
     err: idt::PageFaultErrorCode,
 ) {
     panic!("cpu exception page_fault: {:#?}", err);

@@ -1,7 +1,4 @@
-use crate::print;
-use crate::println;
-use alloc::string::*;
-use alloc::{boxed::Box, vec::Vec};
+use alloc::vec::Vec;
 use core::fmt::Write;
 use spin;
 
@@ -37,15 +34,12 @@ impl VgaOut {
 impl VgaOut {
     fn write_char_to_writing_idx(&mut self, c: u8) -> Result<(), core::fmt::Error> {
         match self.vga_buff.get_mut(self.writing_idx) {
+            // write the character with the appropriate color
             Some(location) => *location = self.current_color + c as u16,
             None => return Err(core::fmt::Error),
         }
         self.writing_idx += 1;
         Ok(())
-    }
-
-    pub fn get_current_color(&self) -> u16 {
-        self.current_color
     }
 }
 
@@ -65,28 +59,36 @@ impl core::fmt::Write for VgaOut {
                     partial_color = 0;
                     continue;
                 } else if *c == b'm' || *c == b';' {
+                    // Color is foreground
                     if partial_color >= 30 && partial_color <= 37 {
-                        const mask: u16 = 0b00001111u16 << 8;
+                        const MASK: u16 = 0b00001111u16 << 8;
                         let vga_color = (partial_color as u16 - 30) << 8;
-                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                        // write to the lower 4 bytes
+                        self.current_color = (self.current_color & !MASK) ^ (MASK & vga_color);
                     }
 
+                    // Color is foreground
                     if partial_color >= 90 && partial_color <= 97 {
-                        const mask: u16 = 0b00001111u16 << 8;
+                        const MASK: u16 = 0b00001111u16 << 8;
                         let vga_color = (partial_color as u16 - 82) << 8;
-                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                        // write to the lower 4 bytes
+                        self.current_color = (self.current_color & !MASK) ^ (MASK & vga_color);
                     }
 
+                    // Color is background
                     if partial_color >= 40 && partial_color <= 47 {
-                        const mask: u16 = 0b11110000u16 << 8;
+                        const MASK: u16 = 0b11110000u16 << 8;
                         let vga_color = (partial_color as u16 - 40) << 12;
-                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                        // write to the higher 4 bytes
+                        self.current_color = (self.current_color & !MASK) ^ (MASK & vga_color);
                     }
 
+                    // Color is background
                     if partial_color >= 100 && partial_color <= 107 {
-                        const mask: u16 = 0b11110000u16 << 8;
+                        const MASK: u16 = 0b11110000u16 << 8;
                         let vga_color = (partial_color as u16 - 92) << 12;
-                        self.current_color = (self.current_color & !mask) ^ (mask & vga_color);
+                        // write to the higher 4 bytes
+                        self.current_color = (self.current_color & !MASK) ^ (MASK & vga_color);
                     }
 
                     if partial_color == 0 {
@@ -114,9 +116,11 @@ impl core::fmt::Write for VgaOut {
                     continue;
                 }
 
+                // check if screen needs to scroll
                 if self.writing_idx < self.vga_buff.len() {
                     self.write_char_to_writing_idx(*c)?;
                 } else {
+                    // scroll one row by copying
                     let preserved =
                         Vec::from(&self.vga_buff[self.screen_size.0..(self.vga_buff.len())]);
                     self.vga_buff[0..(self.screen_size.0 * (self.screen_size.1 - 1))]
